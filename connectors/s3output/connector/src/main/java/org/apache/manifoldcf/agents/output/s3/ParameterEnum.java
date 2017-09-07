@@ -21,7 +21,7 @@ package org.apache.manifoldcf.agents.output.s3;
 
 /** Parameters constants */
 public enum ParameterEnum {
-  ROOTPATH("");
+  BUCKET("");
 
   final protected String defaultValue;
 

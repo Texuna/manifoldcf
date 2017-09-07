@@ -15,18 +15,18 @@
  limitations under the License.
 -->
 
-#if($TABNAME == $ResourceBundle.getString('FileConnector.PathTabName') && ${SEQNUM} == ${SELECTEDNUM})
+#if($TABNAME == $ResourceBundle.getString('S3Connector.S3TabName') && ${SEQNUM} == ${SELECTEDNUM})
 
 <table class="displaytable">
   <tr><td class="separator" colspan="2"><hr/></td></tr>
   <tr>
-    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('FileConnector.RootPath'))</nobr></td>
-    <td class="value"><input type="text" name="s${SEQNUM}_rootpath" size="64" value="$Encoder.attributeEscape($ROOTPATH)" /></td>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.Bucket'))</nobr></td>
+    <td class="value"><input type="text" name="s${SEQNUM}_bucket" size="64" value="$Encoder.attributeEscape($BUCKET)" /></td>
   </tr>
 </table>
 
 #else
 
-<input type="hidden" name="s${SEQNUM}_rootpath" value="$Encoder.attributeEscape($ROOTPATH)" />
+<input type="hidden" name="s${SEQNUM}_bucket" value="$Encoder.attributeEscape($BUCKET)" />
 
 #end

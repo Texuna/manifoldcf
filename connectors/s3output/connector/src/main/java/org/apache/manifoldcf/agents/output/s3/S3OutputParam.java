@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** 
- * Parameters data for the elasticsearch output connector.
+ * Parameters data for the s3 output connector.
  */
 public class S3OutputParam extends HashMap<ParameterEnum, String>
 {

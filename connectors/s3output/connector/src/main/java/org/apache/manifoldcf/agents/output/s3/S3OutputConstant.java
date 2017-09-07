@@ -28,6 +28,6 @@ public class S3OutputConstant
   // Configuration parameters
 
   /** Root path */
-  public static final String PARAM_ROOTPATH = "rootpath";
+  public static final String PARAM_BUCKET = "bucket";
 
 }

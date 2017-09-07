@@ -19,11 +19,11 @@
 <!--
 function s${SEQNUM}_checkSpecificationForSave()
 {
-  if (editjob.s${SEQNUM}_rootpath.value == "")
+  if (editjob.s${SEQNUM}_bucket.value == "")
   {
-    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('FileConnector.RootPathCannotBeNull'))");
-    SelectSequencedTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('FileConnector.PathTabName'))",${SEQNUM});
-    editjob.s${SEQNUM}_rootpath.focus();
+    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.BucketCannotBeNull'))");
+    SelectSequencedTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))",${SEQNUM});
+    editjob.s${SEQNUM}_bucket.focus();
     return false;
   }
   return true;

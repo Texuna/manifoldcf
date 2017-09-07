@@ -146,7 +146,7 @@ public class S3OutputConnector extends BaseOutputConnector {
    */
   @Override
   public VersionContext getPipelineDescription(Specification spec) throws ManifoldCFException, ServiceInterruption {
-    FileOutputSpecs specs = new FileOutputSpecs(getSpecNode(spec));
+    S3OutputSpecs specs = new S3OutputSpecs(getSpecNode(spec));
     return new VersionContext(specs.toVersionString(),params,spec);
   }
 
@@ -171,7 +171,7 @@ public class S3OutputConnector extends BaseOutputConnector {
 
     S3OutputConfig config = getConfigParameters(null);
 
-    FileOutputSpecs specs = new FileOutputSpecs(getSpecNode(outputDescription.getSpecification()));;
+    S3OutputSpecs specs = new S3OutputSpecs(getSpecNode(outputDescription.getSpecification()));;
     StringBuffer path = new StringBuffer();
 
     String errorCode = "OK";
@@ -181,8 +181,8 @@ public class S3OutputConnector extends BaseOutputConnector {
       /*
         * make file path
         */
-      if (specs.getRootPath() != null) {
-        path.append(specs.getRootPath());
+      if (specs.getBucket() != null) {
+        path.append(specs.getBucket());
       }
         
       // If the path does not yet exist at the root level, it is dangerous to create it.
@@ -487,7 +487,7 @@ public class S3OutputConnector extends BaseOutputConnector {
     int connectionSequenceNumber, List<String> tabsArray)
     throws ManifoldCFException, IOException {
     super.outputSpecificationHeader(out, locale, os, connectionSequenceNumber, tabsArray);
-    tabsArray.add(Messages.getString(locale, "FileConnector.PathTabName"));
+    tabsArray.add(Messages.getString(locale, "S3Connector.S3TabName"));
     outputResource(EDIT_SPECIFICATION_JS, out, locale, null, null, new Integer(connectionSequenceNumber), null);
   }
 
@@ -507,7 +507,7 @@ public class S3OutputConnector extends BaseOutputConnector {
     int connectionSequenceNumber, int actualSequenceNumber, String tabName)
     throws ManifoldCFException, IOException {
     super.outputSpecificationBody(out, locale, os, connectionSequenceNumber, actualSequenceNumber, tabName);
-    FileOutputSpecs specs = getSpecParameters(os);
+    S3OutputSpecs specs = getSpecParameters(os);
     outputResource(EDIT_SPECIFICATION_HTML, out, locale, specs, tabName, new Integer(connectionSequenceNumber), new Integer(actualSequenceNumber));
   }
 
@@ -528,9 +528,9 @@ public class S3OutputConnector extends BaseOutputConnector {
     ConfigurationNode specNode = getSpecNode(os);
     boolean bAdd = (specNode == null);
     if (bAdd) {
-      specNode = new SpecificationNode(S3OutputConstant.PARAM_ROOTPATH);
+      specNode = new SpecificationNode(S3OutputConstant.PARAM_BUCKET);
     }
-    FileOutputSpecs.contextToSpecNode(variableContext, specNode, connectionSequenceNumber);
+    S3OutputSpecs.contextToSpecNode(variableContext, specNode, connectionSequenceNumber);
     if (bAdd) {
       os.addChild(os.getChildCount(), specNode);
     }
@@ -562,7 +562,7 @@ public class S3OutputConnector extends BaseOutputConnector {
     int l = os.getChildCount();
     for (int i = 0; i < l; i++) {
       SpecificationNode node = os.getChild(i);
-      if (node.getType().equals(S3OutputConstant.PARAM_ROOTPATH)) {
+      if (node.getType().equals(S3OutputConstant.PARAM_BUCKET)) {
         return node;
       }
     }
@@ -574,8 +574,8 @@ public class S3OutputConnector extends BaseOutputConnector {
    * @return
    * @throws ManifoldCFException
    */
-  final private FileOutputSpecs getSpecParameters(Specification os) throws ManifoldCFException {
-    return new FileOutputSpecs(getSpecNode(os));
+  final private S3OutputSpecs getSpecParameters(Specification os) throws ManifoldCFException {
+    return new S3OutputSpecs(getSpecNode(os));
   }
 
   /**
@@ -767,27 +767,27 @@ public class S3OutputConnector extends BaseOutputConnector {
     return sb.toString();
   }
   
-  protected static class FileOutputSpecs extends S3OutputParam {
+  protected static class S3OutputSpecs extends S3OutputParam {
     /**
      * 
      */
     private static final long serialVersionUID = 1859652730572662025L;
 
     final public static ParameterEnum[] SPECIFICATIONLIST = {
-      ParameterEnum.ROOTPATH
+      ParameterEnum.BUCKET
     };
 
-    private final String rootPath;
+    private final String bucket;
 
-    /** Build a set of ElasticSearch parameters by reading an instance of
+    /** Build a set of s3 parameters by reading an instance of
      * SpecificationNode.
      * 
      * @param node
      * @throws ManifoldCFException
      */
-    public FileOutputSpecs(ConfigurationNode node) throws ManifoldCFException {
+    public S3OutputSpecs(ConfigurationNode node) throws ManifoldCFException {
       super(SPECIFICATIONLIST);
-      String rootPath = null;
+      String bucket = null;
       for (ParameterEnum param : SPECIFICATIONLIST) {
         String value = null;
         if (node != null) {
@@ -798,8 +798,8 @@ public class S3OutputConnector extends BaseOutputConnector {
         }
         put(param, value);
       }
-      rootPath = getRootPath();
-      this.rootPath = rootPath;
+      bucket = getBucket();
+      this.bucket = bucket;
     }
 
     /**
@@ -818,46 +818,16 @@ public class S3OutputConnector extends BaseOutputConnector {
     /** @return a version string representation of the parameter list */
     public String toVersionString() {
       StringBuilder sb = new StringBuilder();
-      pack(sb,rootPath,'+');
+      pack(sb, bucket,'+');
       return sb.toString();
     }
 
     /**
      * @return
      */
-    public String getRootPath() {
-      return get(ParameterEnum.ROOTPATH);
+    public String getBucket() {
+      return get(ParameterEnum.BUCKET);
     }
-
-    /**
-     * @param content
-     * @return
-     * @throws ManifoldCFException
-     */
-    private final static TreeSet<String> createStringSet(String content) throws ManifoldCFException {
-      TreeSet<String> set = new TreeSet<String>();
-      BufferedReader br = null;
-      StringReader sr = null;
-      try {
-        sr = new StringReader(content);
-        br = new BufferedReader(sr);
-        String line = null;
-        while ((line = br.readLine()) != null) {
-          line = line.trim();
-          if (line.length() > 0) {
-            set.add(line);
-          }
-        }
-        return set;
-      } catch (IOException e) {
-        throw new ManifoldCFException(e);
-      } finally {
-        if (br != null) {
-          IOUtils.closeQuietly(br);
-        }
-      }
-    }
-
   }
 
 }

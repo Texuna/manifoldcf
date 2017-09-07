@@ -30,6 +30,32 @@
 
     <import file="${mcf-dist}/connector-build.xml"/>
 
+    <path id="connector-classpath">
+        <path refid="mcf-connector-build.connector-classpath"/>
+        <fileset dir="../../lib">
+            <include name="aws-java-sdk-core-*.jar"/>
+            <include name="aws-java-sdk-s3-*.jar"/>
+            <include name="jackson-core*.jar"/>
+            <include name="jackson-databind*.jar"/>
+            <include name="jackson-annotations*.jar"/>
+            <include name="joda-time*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="lib" depends="mcf-connector-build.lib,precompile-check" if="canBuild">
+        <mkdir dir="dist/lib"/>
+        <copy todir="dist/lib">
+            <fileset dir="../../lib">
+                <include name="aws-java-sdk-core-*.jar"/>
+                <include name="aws-java-sdk-s3-*.jar"/>
+                <include name="jackson-core*.jar"/>
+                <include name="jackson-databind*.jar"/>
+                <include name="jackson-annotations*.jar"/>
+                <include name="joda-time*.jar"/>
+            </fileset>
+        </copy>
+    </target>
+
     <target name="deliver-connector" depends="mcf-connector-build.deliver-connector">
         <antcall target="general-add-output-connector">
             <param name="connector-label" value="S3 Output"/>

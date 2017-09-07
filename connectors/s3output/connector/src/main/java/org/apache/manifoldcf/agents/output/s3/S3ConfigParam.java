@@ -19,14 +19,19 @@
 package org.apache.manifoldcf.agents.output.s3;
 
 
-/** Parameters and output data for File output connector.
- */
-public class S3OutputConstant {
-    public static final String _rcsid = "@(#)$Id: SolrConfig.java 991374 2010-08-31 22:32:08Z minoru $";
+public class S3ConfigParam {
+    public static final String ENDPOINT = "endpoint";
+    public static final String REGION = "region";
+    public static final String BUCKET = "bucket";
+    public static final String ACCESS_KEY = "access_key";
+    public static final String SECRET_KEY = "secret_key";
+    public static final String PREFIX = "prefix";
 
-    // Configuration parameters
 
-    /** Root path */
-    public static final String PARAM_BUCKET = "bucket";
-
+    public static final String ENDPOINT_DEFAULT = "http://127.0.0.1:9000";
+    public static final String REGION_DEFAULT = "us-east-1";
+    public static final String BUCKET_DEFAULT = "manifoldcf";
+    public static final String ACCESS_KEY_DEFAULT = "WB5NCYCTRVC0P2HT37ZZ";
+    public static final String SECRET_KEY_DEFAULT = "X1tywx+hl7pDhFctcpvAM4XeMj9taJg9wSxSsIIT";
+    public static final String PREFIX_DEFAULT = "";
 }

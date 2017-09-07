@@ -17,5 +17,38 @@
 
 <script type="text/javascript">
 <!--
+function checkConfigForSave() {
+    if (editconnection.endpoint.value == "") {
+        alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.EndpointCannotBeNull'))");
+        SelectTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))");
+        editconnection.endpoint.focus();
+        return false;
+    }
+    if (editconnection.region.value == "") {
+        alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.RegionCannotBeNull'))");
+        SelectTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))");
+        editconnection.region.focus();
+        return false;
+    }
+    if (editconnection.bucket.value == "") {
+        alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.BucketCannotBeNull'))");
+        SelectTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))");
+        editconnection.bucket.focus();
+        return false;
+    }
+    if (editconnection.access_key.value == "") {
+        alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.AccessKeyCannotBeNull'))");
+        SelectTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))");
+        editconnection.access_key.focus();
+        return false;
+    }
+    if (editconnection.secret_key.value == "") {
+        alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.SecretKeyCannotBeNull'))");
+        SelectTab("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('S3Connector.S3TabName'))");
+        editconnection.secret_key.focus();
+        return false;
+    }
+  return true;
+}
 //-->
 </script>

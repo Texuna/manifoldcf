@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: BaseMySQL.java 1221585 2011-12-21 03:10:03Z kwright $ */
 
 /**
 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,41 +16,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.manifoldcf.crawler.connectors.filesystem.tests;
+package org.apache.manifoldcf.agents.output.s3;
 
-import java.io.*;
-import java.util.*;
-import org.junit.*;
-
-/** This is a test which checks to see if document expiration works properly. */
-public class ExpirationHSQLDBIT extends BaseITHSQLDB
+/** This is a testing base class that is responsible for setting up/tearing down the agents framework. */
+public class BaseMySQL extends org.apache.manifoldcf.crawler.tests.ConnectorBaseMySQL
 {
-  protected ExpirationTester tester;
   
-  public ExpirationHSQLDBIT()
+  protected String[] getConnectorNames()
   {
-    tester = new ExpirationTester(mcfInstance);
+    return new String[]{"File Connector"};
   }
   
-  @Before
-  public void setupTester()
-    throws Exception
+  protected String[] getConnectorClasses()
   {
-    tester.setupTestArea();
+    return new String[]{"org.apache.manifoldcf.crawler.connectors.s3.FileConnector"};
   }
-  
-  @After
-  public void teardownTester()
-    throws Exception
-  {
-    tester.teardownTestArea();
-  }
-  
-  @Test
-  public void expirationCheck()
-    throws Exception
-  {
-    tester.executeTest();
-  }
-  
+
 }

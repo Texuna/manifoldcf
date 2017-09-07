@@ -16,15 +16,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.manifoldcf.agents.output.filesystem;
+package org.apache.manifoldcf.agents.output.s3;
 
-import org.apache.manifoldcf.core.interfaces.*;
-import org.apache.manifoldcf.agents.interfaces.*;
-import org.apache.manifoldcf.crawler.interfaces.*;
-import org.apache.manifoldcf.crawler.system.ManifoldCF;
-
-import java.io.*;
-import java.util.*;
 import org.junit.*;
 
 /** This is a very basic sanity check */

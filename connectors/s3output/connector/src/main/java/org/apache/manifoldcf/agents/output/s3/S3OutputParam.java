@@ -1,4 +1,4 @@
-/* $Id: FileOutputConstant.java 991374 2013-05-31 23:01:08Z minoru $ */
+/* $Id: FileOutputParam.java 1299512 2013-05-31 22:59:38Z minoru $ */
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,18 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.manifoldcf.agents.output.filesystem;
 
+package org.apache.manifoldcf.agents.output.s3;
 
-/** Parameters and output data for File output connector.
+import java.util.HashMap;
+import java.util.Map;
+
+/** 
+ * Parameters data for the elasticsearch output connector.
  */
-public class FileOutputConstant
+public class S3OutputParam extends HashMap<ParameterEnum, String>
 {
-  public static final String _rcsid = "@(#)$Id: SolrConfig.java 991374 2010-08-31 22:32:08Z minoru $";
+  private static final long serialVersionUID = -140994685772720029L;
 
-  // Configuration parameters
 
-  /** Root path */
-  public static final String PARAM_ROOTPATH = "rootpath";
+  protected S3OutputParam(ParameterEnum[] params) {
+    super(params.length);
+  }
+
+  final public Map<String, String> buildMap() {
+    Map<String, String> rval = new HashMap<String, String>();
+    for (Map.Entry<ParameterEnum, String> entry : this.entrySet()) {
+      rval.put(entry.getKey().name(), entry.getValue());
+    }
+    return rval;
+  }
 
 }

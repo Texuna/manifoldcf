@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package org.apache.manifoldcf.agents.output.filesystem;
+package org.apache.manifoldcf.agents.output.s3;
 
 import org.apache.manifoldcf.core.interfaces.ConfigParams;
 import org.apache.manifoldcf.core.interfaces.IPostParameters;
@@ -25,7 +25,7 @@ import org.apache.manifoldcf.core.interfaces.IPostParameters;
 import java.util.Locale;
 
 
-public class FileOutputConfig extends FileOutputParam {
+public class S3OutputConfig extends S3OutputParam {
 
   /**
    * 
@@ -41,7 +41,7 @@ public class FileOutputConfig extends FileOutputParam {
    * 
    * @param params
    */
-  public FileOutputConfig(ConfigParams params)
+  public S3OutputConfig(ConfigParams params)
   {
     super(CONFIGURATIONLIST);
     for (ParameterEnum param : CONFIGURATIONLIST) {

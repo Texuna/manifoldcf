@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package org.apache.manifoldcf.agents.output.filesystem;
+package org.apache.manifoldcf.agents.output.s3;
 
 /** Parameters constants */
 public enum ParameterEnum {

@@ -1,4 +1,4 @@
-/* $Id: APISanity.java 996524 2010-09-13 13:38:01Z kwright $ */
+/* $Id: SanityHSQLDBTest.java 1147086 2011-07-15 10:58:30Z kwright $ */
 
 /**
 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,41 +16,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.manifoldcf.crawler.connectors.filesystem.tests;
+package org.apache.manifoldcf.agents.output.s3;
 
-import java.io.*;
-import java.util.*;
 import org.junit.*;
 
 /** This is a very basic sanity check */
-public class APISanityPostgresqlIT extends BaseITPostgresql
+public class SanityHSQLDBTest extends BaseHSQLDB
 {
-  protected APISanityTester tester;
-  
-  public APISanityPostgresqlIT()
-  {
-    tester = new APISanityTester(mcfInstance);
-  }
-  
-  @Before
-  public void setupTester()
-    throws Exception
-  {
-    tester.setupTestArea();
-  }
-  
-  @After
-  public void teardownTester()
-    throws Exception
-  {
-    tester.teardownTestArea();
-  }
   
   @Test
   public void sanityCheck()
     throws Exception
   {
-    tester.executeTest();
+    // If we get this far, it must mean that the setup was successful, which is all that I'm shooting for in this test.
   }
   
+
 }

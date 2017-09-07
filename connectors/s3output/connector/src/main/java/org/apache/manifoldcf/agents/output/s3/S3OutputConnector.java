@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.manifoldcf.agents.output.filesystem;
+package org.apache.manifoldcf.agents.output.s3;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.manifoldcf.agents.interfaces.*;
@@ -55,7 +54,7 @@ import org.apache.manifoldcf.core.interfaces.ManifoldCFException;
 import org.apache.manifoldcf.core.interfaces.SpecificationNode;
 import org.apache.manifoldcf.core.interfaces.VersionContext;
 
-public class FileOutputConnector extends BaseOutputConnector {
+public class S3OutputConnector extends BaseOutputConnector {
 
   public static final String _rcsid = "@(#)$Id: FileOutputConnector.java 988245 2010-08-23 18:39:35Z minoru $";
 
@@ -89,7 +88,7 @@ public class FileOutputConnector extends BaseOutputConnector {
 
   /** Constructor.
    */
-  public FileOutputConnector() {
+  public S3OutputConnector() {
   }
 
   /** Return the list of activities that this connector supports (i.e. writes into the log).
@@ -170,7 +169,7 @@ public class FileOutputConnector extends BaseOutputConnector {
     // Establish a session
     getSession();
 
-    FileOutputConfig config = getConfigParameters(null);
+    S3OutputConfig config = getConfigParameters(null);
 
     FileOutputSpecs specs = new FileOutputSpecs(getSpecNode(outputDescription.getSpecification()));;
     StringBuffer path = new StringBuffer();
@@ -375,7 +374,7 @@ public class FileOutputConnector extends BaseOutputConnector {
     String errorCode = "OK";
     String errorDesc = null;
 
-    FileOutputConfig config = getConfigParameters(null);
+    S3OutputConfig config = getConfigParameters(null);
 
     StringBuffer path = new StringBuffer();
     try {
@@ -529,7 +528,7 @@ public class FileOutputConnector extends BaseOutputConnector {
     ConfigurationNode specNode = getSpecNode(os);
     boolean bAdd = (specNode == null);
     if (bAdd) {
-      specNode = new SpecificationNode(FileOutputConstant.PARAM_ROOTPATH);
+      specNode = new SpecificationNode(S3OutputConstant.PARAM_ROOTPATH);
     }
     FileOutputSpecs.contextToSpecNode(variableContext, specNode, connectionSequenceNumber);
     if (bAdd) {
@@ -563,7 +562,7 @@ public class FileOutputConnector extends BaseOutputConnector {
     int l = os.getChildCount();
     for (int i = 0; i < l; i++) {
       SpecificationNode node = os.getChild(i);
-      if (node.getType().equals(FileOutputConstant.PARAM_ROOTPATH)) {
+      if (node.getType().equals(S3OutputConstant.PARAM_ROOTPATH)) {
         return node;
       }
     }
@@ -583,10 +582,10 @@ public class FileOutputConnector extends BaseOutputConnector {
    * @param configParams
    * @return
    */
-  final private FileOutputConfig getConfigParameters(ConfigParams configParams) {
+  final private S3OutputConfig getConfigParameters(ConfigParams configParams) {
     if (configParams == null)
       configParams = getConfiguration();
-    return new FileOutputConfig(configParams);
+    return new S3OutputConfig(configParams);
   }
 
   /** Read the content of a resource, replace the variable ${PARAMNAME} with the
@@ -595,8 +594,8 @@ public class FileOutputConnector extends BaseOutputConnector {
    * @param resName
    * @param out
    * @throws ManifoldCFException */
-  private static void outputResource(String resName, IHTTPOutput out, Locale locale, FileOutputParam params, String tabName,
-    Integer sequenceNumber, Integer currentSequenceNumber) throws ManifoldCFException {
+  private static void outputResource(String resName, IHTTPOutput out, Locale locale, S3OutputParam params, String tabName,
+                                     Integer sequenceNumber, Integer currentSequenceNumber) throws ManifoldCFException {
     Map<String,String> paramMap = null;
     if (params != null) {
       paramMap = params.buildMap();
@@ -768,7 +767,7 @@ public class FileOutputConnector extends BaseOutputConnector {
     return sb.toString();
   }
   
-  protected static class FileOutputSpecs extends FileOutputParam {
+  protected static class FileOutputSpecs extends S3OutputParam {
     /**
      * 
      */

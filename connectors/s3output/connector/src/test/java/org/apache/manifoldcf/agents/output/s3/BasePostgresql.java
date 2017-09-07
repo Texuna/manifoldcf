@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: TestBase.java 988245 2010-08-23 18:39:35Z kwright $ */
 
 /**
 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,41 +16,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.manifoldcf.crawler.connectors.filesystem.tests;
+package org.apache.manifoldcf.agents.output.s3;
 
-import java.io.*;
-import java.util.*;
-import org.junit.*;
-
-/** This is a test which checks to be sure hopcount functionality is working properly. */
-public class HopcountHSQLDBIT extends BaseITHSQLDB
+/** This is a testing base class that is responsible for setting up/tearing down the agents framework. */
+public class BasePostgresql extends org.apache.manifoldcf.crawler.tests.ConnectorBasePostgresql
 {
-  protected HopcountTester tester;
   
-  public HopcountHSQLDBIT()
+  protected String[] getConnectorNames()
   {
-    tester = new HopcountTester(mcfInstance);
+    return new String[]{"File Connector"};
   }
   
-  @Before
-  public void setupTester()
-    throws Exception
+  protected String[] getConnectorClasses()
   {
-    tester.setupTestArea();
+    return new String[]{"org.apache.manifoldcf.crawler.connectors.s3.FileConnector"};
   }
-  
-  @After
-  public void teardownTester()
-    throws Exception
-  {
-    tester.teardownTestArea();
-  }
-  
-  @Test
-  public void hopcountCheck()
-    throws Exception
-  {
-    tester.executeTest();
-  }
-  
+
 }

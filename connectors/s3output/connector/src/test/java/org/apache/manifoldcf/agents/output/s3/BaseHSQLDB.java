@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: BaseHSQLDB.java 1147086 2011-07-15 10:58:30Z kwright $ */
 
 /**
 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,19 +16,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.manifoldcf.crawler.connectors.filesystem.tests;
-
-import org.apache.manifoldcf.core.interfaces.*;
-import org.apache.manifoldcf.agents.interfaces.*;
-import org.apache.manifoldcf.crawler.interfaces.*;
-import org.apache.manifoldcf.crawler.system.ManifoldCF;
-
-import java.io.*;
-import java.util.*;
-import org.junit.*;
+package org.apache.manifoldcf.agents.output.s3;
 
 /** This is a testing base class that is responsible for setting up/tearing down the agents framework. */
-public class BaseMySQL extends org.apache.manifoldcf.crawler.tests.ConnectorBaseMySQL
+public class BaseHSQLDB extends org.apache.manifoldcf.crawler.tests.ConnectorBaseHSQLDB
 {
   
   protected String[] getConnectorNames()
@@ -38,7 +29,7 @@ public class BaseMySQL extends org.apache.manifoldcf.crawler.tests.ConnectorBase
   
   protected String[] getConnectorClasses()
   {
-    return new String[]{"org.apache.manifoldcf.crawler.connectors.filesystem.FileConnector"};
+    return new String[]{"org.apache.manifoldcf.crawler.connectors.s3.FileConnector"};
   }
 
 }

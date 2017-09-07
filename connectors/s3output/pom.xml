@@ -30,7 +30,7 @@
   </properties>
 
   <artifactId>mcf-s3-output-connector</artifactId>
-  <name>ManifoldCF - Connectors - S3 - Ouutput</name>
+  <name>ManifoldCF - Connectors - S3 - Output</name>
 
   <build>
     <defaultGoal>integration-test</defaultGoal>

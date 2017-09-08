@@ -144,7 +144,7 @@
     <property name="jsoup.version" value="1.7.2"/>
     <property name="jj2000.version" value="5.2"/>
     <property name="hadoop.version" value="2.6.0"/>
-    <property name="aws-sdk.version" value="1.9.0"/>
+    <property name="aws-sdk.version" value="1.10.77"/>
     <property name="joda-time.version" value="2.9.7"/>
     <property name="junrar.version" value="0.7"/>
     <property name="jackcess.version" value="2.1.4"/>

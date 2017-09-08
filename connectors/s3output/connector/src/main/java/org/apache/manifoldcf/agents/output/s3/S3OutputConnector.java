@@ -111,13 +111,13 @@ public class S3OutputConnector extends BaseOutputConnector {
 
     @Override
     public int addOrReplaceDocumentWithException(String documentURI, VersionContext outputDescription, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, ServiceInterruption, IOException {
-        final String nameHash = DigestUtils.sha256Hex(documentURI);
-        final String uid = TimeUtils.yyyyMMddHHmmUTCnow() + "/" + nameHash;
+        final String uid = DigestUtils.sha256Hex(documentURI);
         final String bucket = params.getParameter(S3ConfigParam.BUCKET);
         final String prefix = params.getParameter(S3ConfigParam.PREFIX);
+        final String key = prefix + uid;
 
         String errorCode = "OK";
-        String errorDesc = null;
+        String errorDesc = "Buket:" + bucket + " Key:" + key + "\n";
 
         Path doc = null;
         try {
@@ -126,7 +126,7 @@ public class S3OutputConnector extends BaseOutputConnector {
                 errorDesc = "Empty file";
                 return DOCUMENTSTATUS_REJECTED;
             }
-            doc = Files.createTempFile("manifold" + System.nanoTime(), nameHash);
+            doc = Files.createTempFile("manifold" + System.nanoTime(), uid);
             Files.copy(document.getBinaryStream(), doc, StandardCopyOption.REPLACE_EXISTING);
             //String bucketName, String key, InputStream input, ObjectMetadata metadata
             ObjectMetadata objectMetadata = new ObjectMetadata();
@@ -148,14 +148,14 @@ public class S3OutputConnector extends BaseOutputConnector {
             customMetadata.put("mcf_document_uri", documentURI);
             objectMetadata.setUserMetadata(customMetadata);
 
-            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, prefix + uid, doc.toFile());
+            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, key, doc.toFile());
             putObjectRequest.setMetadata(objectMetadata);
             s3.putObject(putObjectRequest);
         } catch (Exception e) {
+            String description = "Fail to send file to s3." + errorDesc;
+            Logging.agents.error(description, e);
             errorCode = "FAIL";
-            String description = "Fail to send file to s3. Uri:" + documentURI + ", length: " + document.getBinaryLength();
             errorDesc =  description + e.getMessage();
-            Logging.agents.error("Fail to send file to s3.", e);
             return DOCUMENTSTATUS_REJECTED;
         } finally {
             if (doc != null) {

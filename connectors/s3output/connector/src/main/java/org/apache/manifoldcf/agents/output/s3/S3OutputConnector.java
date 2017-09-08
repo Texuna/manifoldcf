@@ -28,26 +28,29 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import org.apache.commons.collections.map.HashedMap;
-import org.apache.logging.log4j.util.Strings;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggerFactory;
 import org.apache.manifoldcf.agents.interfaces.*;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
+import org.apache.manifoldcf.agents.output.s3.security.Security;
+import org.apache.manifoldcf.agents.output.s3.security.SecurityHelper;
+import org.apache.manifoldcf.agents.output.s3.utils.TimeUtils;
 import org.apache.manifoldcf.agents.system.Logging;
-import org.apache.manifoldcf.agents.system.ManifoldCF;
 import org.apache.manifoldcf.core.interfaces.*;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class S3OutputConnector extends BaseOutputConnector {
-
     public final static String INGEST_ACTIVITY = "document ingest";
     public final static String REMOVE_ACTIVITY = "document deletion";
     private static final String[] activitiesList = new String[]{INGEST_ACTIVITY, REMOVE_ACTIVITY};
@@ -57,7 +60,8 @@ public class S3OutputConnector extends BaseOutputConnector {
     private static final String VIEW_CONFIGURATION_HTML = "viewConfiguration.html";
 
 
-    AmazonS3 s3;
+    private AmazonS3 s3;
+    private ObjectMapper om = new ObjectMapper();
 
 
     @Override
@@ -107,31 +111,50 @@ public class S3OutputConnector extends BaseOutputConnector {
 
     @Override
     public int addOrReplaceDocumentWithException(String documentURI, VersionContext outputDescription, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, ServiceInterruption, IOException {
-        String errorCode = "OK";
-        String errorDesc = null;
-        final String uid = ManifoldCF.hash(documentURI);
+        final String nameHash = DigestUtils.sha256Hex(documentURI);
+        final String uid = TimeUtils.yyyyMMddHHmmUTCnow() + "/" + nameHash;
         final String bucket = params.getParameter(S3ConfigParam.BUCKET);
         final String prefix = params.getParameter(S3ConfigParam.PREFIX);
 
+        String errorCode = "OK";
+        String errorDesc = null;
+
         Path doc = null;
         try {
-            doc = Files.createTempFile("manifold", uid);
-            Files.copy(document.getBinaryStream(), doc);
+            if(document.getBinaryLength() == 0){
+                errorCode = "REJECTED";
+                errorDesc = "Empty file";
+                return DOCUMENTSTATUS_REJECTED;
+            }
+            doc = Files.createTempFile("manifold" + System.nanoTime(), nameHash);
+            Files.copy(document.getBinaryStream(), doc, StandardCopyOption.REPLACE_EXISTING);
             //String bucketName, String key, InputStream input, ObjectMetadata metadata
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(document.getBinaryLength());
 
             Map<String, String> customMetadata = new HashMap<>();
             customMetadata.put("test_field", "test_value");
+            final Map<String, Security> securityMap = SecurityHelper.getSecurityRules(document);
+            final Map<String, Security> slorSecurityMap = SecurityHelper.convertToSolrSecurityRules(securityMap, authorityNameString, activities);
+            customMetadata.put("mcf_repository_security", om.writeValueAsString(securityMap));
+            customMetadata.put("mcf_solr_security", om.writeValueAsString(securityMap));
+            customMetadata.put("mcf_mime_type", document.getMimeType());
+            customMetadata.put("mcf_filename", document.getFileName());
+            customMetadata.put("mcf_length_bytes", Long.toString(document.getBinaryLength()));
+            customMetadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
+            customMetadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
+            customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
+            customMetadata.put("mcf_authority_name", authorityNameString);
+            customMetadata.put("mcf_document_uri", documentURI);
             objectMetadata.setUserMetadata(customMetadata);
 
             final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, prefix + uid, doc.toFile());
             putObjectRequest.setMetadata(objectMetadata);
             s3.putObject(putObjectRequest);
-
         } catch (Exception e) {
             errorCode = "FAIL";
-            errorDesc = "Fail to send file to s3. Bucket:" + bucket + ". " + e.getMessage();
+            String description = "Fail to send file to s3. Uri:" + documentURI + ", length: " + document.getBinaryLength();
+            errorDesc =  description + e.getMessage();
             Logging.agents.error("Fail to send file to s3.", e);
             return DOCUMENTSTATUS_REJECTED;
         } finally {

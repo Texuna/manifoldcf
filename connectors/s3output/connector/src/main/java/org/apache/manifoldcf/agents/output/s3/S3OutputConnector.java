@@ -29,9 +29,8 @@ import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggerFactory;
 import org.apache.manifoldcf.agents.interfaces.*;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
 import org.apache.manifoldcf.agents.output.s3.security.Security;
@@ -41,7 +40,7 @@ import org.apache.manifoldcf.agents.system.Logging;
 import org.apache.manifoldcf.core.interfaces.*;
 
 import java.io.IOException;
-import java.nio.file.CopyOption;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -49,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 
 public class S3OutputConnector extends BaseOutputConnector {
     public final static String INGEST_ACTIVITY = "document ingest";
@@ -94,13 +94,16 @@ public class S3OutputConnector extends BaseOutputConnector {
     @Override
     public void disconnect() throws ManifoldCFException {
         super.disconnect();
-        //TODO
     }
 
     @Override
     public String check() throws ManifoldCFException {
+        final String bucket = params.getParameter(S3ConfigParam.BUCKET);
+        if(!s3.doesBucketExist(bucket)){
+            return "Connection not working. Bucket '" + bucket + "' does not exist. Create it manually.";
+        }
+
         return super.check();
-        //TODO
     }
 
     @Override
@@ -111,10 +114,9 @@ public class S3OutputConnector extends BaseOutputConnector {
 
     @Override
     public int addOrReplaceDocumentWithException(String documentURI, VersionContext outputDescription, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, ServiceInterruption, IOException {
-        final String uid = DigestUtils.sha256Hex(documentURI);
         final String bucket = params.getParameter(S3ConfigParam.BUCKET);
         final String prefix = params.getParameter(S3ConfigParam.PREFIX);
-        final String key = prefix + uid;
+        final String key = genDocS3Key(prefix, documentURI);
 
         String errorCode = "OK";
         String errorDesc = "Buket:" + bucket + " Key:" + key + "\n";
@@ -126,7 +128,7 @@ public class S3OutputConnector extends BaseOutputConnector {
                 errorDesc = "Empty file";
                 return DOCUMENTSTATUS_REJECTED;
             }
-            doc = Files.createTempFile("manifold" + System.nanoTime(), uid);
+            doc = Files.createTempFile("manifold" + System.nanoTime(), DigestUtils.sha256Hex(documentURI));
             Files.copy(document.getBinaryStream(), doc, StandardCopyOption.REPLACE_EXISTING);
             //String bucketName, String key, InputStream input, ObjectMetadata metadata
             ObjectMetadata objectMetadata = new ObjectMetadata();
@@ -139,13 +141,13 @@ public class S3OutputConnector extends BaseOutputConnector {
             customMetadata.put("mcf_repository_security", om.writeValueAsString(securityMap));
             customMetadata.put("mcf_solr_security", om.writeValueAsString(securityMap));
             customMetadata.put("mcf_mime_type", document.getMimeType());
-            customMetadata.put("mcf_filename", document.getFileName());
+            customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
             customMetadata.put("mcf_length_bytes", Long.toString(document.getBinaryLength()));
             customMetadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
             customMetadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
             customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
             customMetadata.put("mcf_authority_name", authorityNameString);
-            customMetadata.put("mcf_document_uri", documentURI);
+            customMetadata.put("mcf_document_uri", utfBase64(documentURI));
             objectMetadata.setUserMetadata(customMetadata);
 
             final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, key, doc.toFile());
@@ -167,14 +169,27 @@ public class S3OutputConnector extends BaseOutputConnector {
         return DOCUMENTSTATUS_ACCEPTED;
     }
 
+    private String utfBase64(String str){
+        return new String(Base64.encodeBase64(str.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+    }
+
+    private String genDocS3Key(String prefix, String documentURI){
+        final String uid = DigestUtils.sha256Hex(documentURI);
+        final String key = prefix + uid;
+        return key;
+    }
 
     @Override
     public void removeDocument(String documentURI, String outputDescription, IOutputRemoveActivity activities) throws ManifoldCFException, ServiceInterruption {
-        //TODO
+//        final String bucket = params.getParameter(S3ConfigParam.BUCKET);
+//        final String prefix = params.getParameter(S3ConfigParam.PREFIX);
+//        final String key = genDocS3Key(prefix, documentURI);
+//
+//        s3.deleteObject(bucket, key);
     }
 
     //TODO refactor rename
-    private static Map<String, Object> fillInServerConfigurationMap(ConfigParams parameters) {
+    private static Map<String, Object> getConfigurationMap(ConfigParams parameters) {
         String endpoint = parameters.getParameter(S3ConfigParam.ENDPOINT);
         String region = parameters.getParameter(S3ConfigParam.REGION);
         String bucket = parameters.getParameter(S3ConfigParam.BUCKET);
@@ -203,7 +218,7 @@ public class S3OutputConnector extends BaseOutputConnector {
 
     @Override
     public void viewConfiguration(IThreadContext threadContext, IHTTPOutput out, Locale locale, ConfigParams parameters) throws ManifoldCFException, IOException {
-        Map<String, Object> paramMap = fillInServerConfigurationMap(parameters);
+        Map<String, Object> paramMap = getConfigurationMap(parameters);
         Messages.outputResourceWithVelocity(out, locale, VIEW_CONFIGURATION_HTML, paramMap);
     }
 
@@ -211,13 +226,13 @@ public class S3OutputConnector extends BaseOutputConnector {
     public void outputConfigurationHeader(IThreadContext threadContext, IHTTPOutput out, Locale locale, ConfigParams parameters, List<String> tabsArray) throws ManifoldCFException, IOException {
         tabsArray.add(Messages.getString(locale, "S3Connector.S3TabName"));
 
-        Map<String, Object> paramMap = fillInServerConfigurationMap(parameters);
+        Map<String, Object> paramMap = getConfigurationMap(parameters);
         Messages.outputResourceWithVelocity(out, locale, EDIT_CONFIGURATION_JS, paramMap);
     }
 
     @Override
     public void outputConfigurationBody(IThreadContext threadContext, IHTTPOutput out, Locale locale, ConfigParams parameters, String tabName) throws ManifoldCFException, IOException {
-        Map<String, Object> paramMap = fillInServerConfigurationMap(parameters);
+        Map<String, Object> paramMap = getConfigurationMap(parameters);
         paramMap.put("TABNAME", tabName);
         Messages.outputResourceWithVelocity(out, locale, EDIT_CONFIGURATION_HTML, paramMap);
     }

@@ -28,6 +28,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -39,7 +40,7 @@ import org.apache.manifoldcf.agents.output.s3.utils.TimeUtils;
 import org.apache.manifoldcf.agents.system.Logging;
 import org.apache.manifoldcf.core.interfaces.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,8 +86,7 @@ public class S3OutputConnector extends BaseOutputConnector {
         s3 = new AmazonS3Client(credentials, clientConfiguration);
         s3.setRegion(Region.getRegion(Regions.fromName(region)));
         s3.setEndpoint(endpoint);
-        final S3ClientOptions clientOptions = new S3ClientOptions();
-        clientOptions.setPathStyleAccess(true);
+        final S3ClientOptions clientOptions = S3ClientOptions.builder().setPathStyleAccess(true).build();
         s3.setS3ClientOptions(clientOptions);
 
     }
@@ -99,7 +99,7 @@ public class S3OutputConnector extends BaseOutputConnector {
     @Override
     public String check() throws ManifoldCFException {
         final String bucket = params.getParameter(S3ConfigParam.BUCKET);
-        if(!s3.doesBucketExist(bucket)){
+        if (!s3.doesBucketExist(bucket)) {
             return "Connection not working. Bucket '" + bucket + "' does not exist. Create it manually.";
         }
 
@@ -116,48 +116,33 @@ public class S3OutputConnector extends BaseOutputConnector {
     public int addOrReplaceDocumentWithException(String documentURI, VersionContext outputDescription, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, ServiceInterruption, IOException {
         final String bucket = params.getParameter(S3ConfigParam.BUCKET);
         final String prefix = params.getParameter(S3ConfigParam.PREFIX);
-        final String key = genDocS3Key(prefix, documentURI);
+        final String metaKey = genMetaKey(prefix, documentURI);
 
         String errorCode = "OK";
-        String errorDesc = "Buket:" + bucket + " Key:" + key + "\n";
+        String errorDesc = "Buket:" + bucket + " Key:" + metaKey + "\n";
 
         Path doc = null;
         try {
-            if(document.getBinaryLength() == 0){
+            if (document.getBinaryLength() == 0) {
                 errorCode = "REJECTED";
                 errorDesc = "Empty file";
                 return DOCUMENTSTATUS_REJECTED;
             }
             doc = Files.createTempFile("manifold" + System.nanoTime(), DigestUtils.sha256Hex(documentURI));
             Files.copy(document.getBinaryStream(), doc, StandardCopyOption.REPLACE_EXISTING);
-            //String bucketName, String key, InputStream input, ObjectMetadata metadata
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentLength(document.getBinaryLength());
+            final String fileMd5Hex = getHash(doc.toFile());
+            final String fileKey = genFileKey(prefix, fileMd5Hex);
+            storeMetaObject(bucket, metaKey, fileKey, fileMd5Hex, documentURI, document, authorityNameString, activities);
 
-            Map<String, String> customMetadata = new HashMap<>();
-            customMetadata.put("test_field", "test_value");
-            final Map<String, Security> securityMap = SecurityHelper.getSecurityRules(document);
-            final Map<String, Security> slorSecurityMap = SecurityHelper.convertToSolrSecurityRules(securityMap, authorityNameString, activities);
-            customMetadata.put("mcf_repository_security", om.writeValueAsString(securityMap));
-            customMetadata.put("mcf_solr_security", om.writeValueAsString(securityMap));
-            customMetadata.put("mcf_mime_type", document.getMimeType());
-            customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
-            customMetadata.put("mcf_length_bytes", Long.toString(document.getBinaryLength()));
-            customMetadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
-            customMetadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
-            customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
-            customMetadata.put("mcf_authority_name", authorityNameString);
-            customMetadata.put("mcf_document_uri", utfBase64(documentURI));
-            objectMetadata.setUserMetadata(customMetadata);
+            if(!s3.doesObjectExist(bucket, fileKey)){
+                storeFileObject(doc, bucket, fileKey, fileMd5Hex, document);
+            }
 
-            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, key, doc.toFile());
-            putObjectRequest.setMetadata(objectMetadata);
-            s3.putObject(putObjectRequest);
         } catch (Exception e) {
             String description = "Fail to send file to s3." + errorDesc;
             Logging.agents.error(description, e);
             errorCode = "FAIL";
-            errorDesc =  description + e.getMessage();
+            errorDesc = description + e.getMessage();
             return DOCUMENTSTATUS_REJECTED;
         } finally {
             if (doc != null) {
@@ -169,26 +154,83 @@ public class S3OutputConnector extends BaseOutputConnector {
         return DOCUMENTSTATUS_ACCEPTED;
     }
 
-    private String utfBase64(String str){
+    private void storeMetaObject(String bucket, String metaKey, String fileKey, String fileMd5Hex, String documentURI, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, IOException {
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+
+        Map<String, String> customMetadata = new HashMap<>();
+        final Map<String, Security> securityMap = SecurityHelper.getSecurityRules(document);
+        final Map<String, Security> slorSecurityMap = SecurityHelper.convertToSolrSecurityRules(securityMap, authorityNameString, activities);
+
+        customMetadata.put("mcf_repository_security", om.writeValueAsString(securityMap));
+        customMetadata.put("mcf_solr_security", om.writeValueAsString(securityMap));
+        customMetadata.put("mcf_mime_type", document.getMimeType());
+        customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
+        customMetadata.put("mcf_length_bytes", Long.toString(document.getBinaryLength()));
+        customMetadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
+        customMetadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
+        customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
+        customMetadata.put("mcf_authority_name", authorityNameString);
+        customMetadata.put("mcf_document_uri", utfBase64(documentURI));
+        customMetadata.put("file_key",fileKey);
+        customMetadata.put("file_md5hex",fileMd5Hex);
+        objectMetadata.setUserMetadata(customMetadata);
+
+        Path emtyDoc = null;
+        try {
+            emtyDoc = Files.createTempFile("empty", null);
+            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, metaKey, emtyDoc.toFile());
+            putObjectRequest.setMetadata(objectMetadata);
+            s3.putObject(putObjectRequest);
+        }finally {
+            if (emtyDoc != null) {
+                Files.delete(emtyDoc);
+            }
+        }
+    }
+
+    private void storeFileObject(Path doc, String bucket, String fileKey, String fileMd5Hex, RepositoryDocument document) throws IOException {
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+
+        Map<String, String> customMetadata = new HashMap<>();
+        customMetadata.put("mcf_mime_type", document.getMimeType());
+        customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
+        customMetadata.put("file_length", Long.toString(document.getBinaryLength()));
+        customMetadata.put("file_key",fileKey);
+        customMetadata.put("file_md5hex",fileMd5Hex);
+        objectMetadata.setUserMetadata(customMetadata);
+
+
+        final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fileKey, doc.toFile());
+        putObjectRequest.setMetadata(objectMetadata);
+        s3.putObject(putObjectRequest);
+    }
+
+    private String utfBase64(String str) {
         return new String(Base64.encodeBase64(str.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
     }
 
-    private String genDocS3Key(String prefix, String documentURI){
+    private String genMetaKey(String prefix, String documentURI) {
         final String uid = DigestUtils.sha256Hex(documentURI);
-        final String key = prefix + uid;
+        final String key = prefix + "meta/" + uid;
         return key;
+    }
+
+    private String genFileKey(String prefix, String hash) {
+        final String key = prefix + "file/" + hash;
+        return key;
+    }
+
+    private String getHash(File file) throws IOException {
+        try(InputStream in = new FileInputStream(file)) {
+            return DigestUtils.md5Hex(in);
+        }
     }
 
     @Override
     public void removeDocument(String documentURI, String outputDescription, IOutputRemoveActivity activities) throws ManifoldCFException, ServiceInterruption {
-//        final String bucket = params.getParameter(S3ConfigParam.BUCKET);
-//        final String prefix = params.getParameter(S3ConfigParam.PREFIX);
-//        final String key = genDocS3Key(prefix, documentURI);
-//
-//        s3.deleteObject(bucket, key);
+        //TODO
     }
 
-    //TODO refactor rename
     private static Map<String, Object> getConfigurationMap(ConfigParams parameters) {
         String endpoint = parameters.getParameter(S3ConfigParam.ENDPOINT);
         String region = parameters.getParameter(S3ConfigParam.REGION);

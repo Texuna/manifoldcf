@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.manifoldcf.agents.interfaces.*;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
 import org.apache.manifoldcf.agents.output.s3.security.Security;
@@ -134,7 +135,7 @@ public class S3OutputConnector extends BaseOutputConnector {
             final String fileKey = genFileKey(prefix, fileMd5Hex);
             storeMetaObject(bucket, metaKey, fileKey, fileMd5Hex, documentURI, document, authorityNameString, activities);
 
-            if(!s3.doesObjectExist(bucket, fileKey)){
+            if (!s3.doesObjectExist(bucket, fileKey)) {
                 storeFileObject(doc, bucket, fileKey, fileMd5Hex, document);
             }
 
@@ -171,8 +172,12 @@ public class S3OutputConnector extends BaseOutputConnector {
         customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
         customMetadata.put("mcf_authority_name", authorityNameString);
         customMetadata.put("mcf_document_uri", utfBase64(documentURI));
-        customMetadata.put("file_key",fileKey);
-        customMetadata.put("file_md5hex",fileMd5Hex);
+        customMetadata.put("file_key", fileKey);
+        customMetadata.put("file_md5hex", fileMd5Hex);
+        customMetadata.put("file_ext", FilenameUtils.getExtension(document.getFileName()));
+        customMetadata.put("file_mimetype", document.getMimeType());
+        customMetadata.put("file_size", Long.toString(document.getBinaryLength()));
+
         objectMetadata.setUserMetadata(customMetadata);
 
         Path emtyDoc = null;
@@ -181,7 +186,7 @@ public class S3OutputConnector extends BaseOutputConnector {
             final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, metaKey, emtyDoc.toFile());
             putObjectRequest.setMetadata(objectMetadata);
             s3.putObject(putObjectRequest);
-        }finally {
+        } finally {
             if (emtyDoc != null) {
                 Files.delete(emtyDoc);
             }
@@ -195,8 +200,8 @@ public class S3OutputConnector extends BaseOutputConnector {
         customMetadata.put("mcf_mime_type", document.getMimeType());
         customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
         customMetadata.put("file_length", Long.toString(document.getBinaryLength()));
-        customMetadata.put("file_key",fileKey);
-        customMetadata.put("file_md5hex",fileMd5Hex);
+        customMetadata.put("file_key", fileKey);
+        customMetadata.put("file_md5hex", fileMd5Hex);
         objectMetadata.setUserMetadata(customMetadata);
 
 
@@ -221,7 +226,7 @@ public class S3OutputConnector extends BaseOutputConnector {
     }
 
     private String getHash(File file) throws IOException {
-        try(InputStream in = new FileInputStream(file)) {
+        try (InputStream in = new FileInputStream(file)) {
             return DigestUtils.md5Hex(in);
         }
     }

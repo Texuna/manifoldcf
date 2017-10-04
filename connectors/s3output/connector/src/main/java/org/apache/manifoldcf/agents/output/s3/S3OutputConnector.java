@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.manifoldcf.agents.interfaces.*;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
 import org.apache.manifoldcf.agents.output.s3.security.Security;
@@ -156,40 +157,43 @@ public class S3OutputConnector extends BaseOutputConnector {
     }
 
     private void storeMetaObject(String bucket, String metaKey, String fileKey, String fileMd5Hex, String documentURI, RepositoryDocument document, String authorityNameString, IOutputAddActivity activities) throws ManifoldCFException, IOException {
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-
-        Map<String, String> customMetadata = new HashMap<>();
+        Map<String, Object> metadata = new HashMap<>();
         final Map<String, Security> securityMap = SecurityHelper.getSecurityRules(document);
         final Map<String, Security> slorSecurityMap = SecurityHelper.convertToSolrSecurityRules(securityMap, authorityNameString, activities);
 
-        customMetadata.put("mcf_repository_security", om.writeValueAsString(securityMap));
-        customMetadata.put("mcf_solr_security", om.writeValueAsString(securityMap));
-        customMetadata.put("mcf_mime_type", document.getMimeType());
-        customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
-        customMetadata.put("mcf_length_bytes", Long.toString(document.getBinaryLength()));
-        customMetadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
-        customMetadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
-        customMetadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
-        customMetadata.put("mcf_authority_name", authorityNameString);
-        customMetadata.put("mcf_document_uri", utfBase64(documentURI));
-        customMetadata.put("file_key", fileKey);
-        customMetadata.put("file_md5hex", fileMd5Hex);
-        customMetadata.put("file_ext", FilenameUtils.getExtension(document.getFileName()));
-        customMetadata.put("file_mimetype", document.getMimeType());
-        customMetadata.put("file_size", Long.toString(document.getBinaryLength()));
+        metadata.put("mcf_repository_security", securityMap);
+        metadata.put("mcf_solr_security", securityMap);
+        metadata.put("mcf_mime_type", document.getMimeType());
+        metadata.put("mcf_length_bytes", document.getBinaryLength());
+        metadata.put("mcf_created_date", TimeUtils.toISOformatAtUTC(document.getCreatedDate()));
+        metadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
+        metadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
+        metadata.put("mcf_authority_name", authorityNameString);
+        metadata.put("mcf_document_uri", utfBase64(documentURI));
 
-        objectMetadata.setUserMetadata(customMetadata);
+        metadata.put("filename_b64", utfBase64(document.getFileName()));
+        metadata.put("file_key", fileKey);
+        metadata.put("file_md5hex", fileMd5Hex);
+        metadata.put("file_ext", FilenameUtils.getExtension(document.getFileName()));
+        metadata.put("file_mimetype", document.getMimeType());
+        metadata.put("file_size", Long.toString(document.getBinaryLength()));
 
-        Path emtyDoc = null;
+        putMetadata(metadata, bucket, metaKey);
+
+    }
+
+    public void putMetadata(Map<String, Object> metadata, String bucket, String key) {
         try {
-            emtyDoc = Files.createTempFile("empty", null);
-            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, metaKey, emtyDoc.toFile());
-            putObjectRequest.setMetadata(objectMetadata);
+            byte[] data = om.writeValueAsBytes(metadata);
+            ByteArrayInputStream in = new ByteArrayInputStream(data);
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(data.length);
+            objectMetadata.setContentType("application/json; charset=utf-8");
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, key, in, objectMetadata);
             s3.putObject(putObjectRequest);
-        } finally {
-            if (emtyDoc != null) {
-                Files.delete(emtyDoc);
-            }
+            IOUtils.closeQuietly(in);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -198,7 +202,7 @@ public class S3OutputConnector extends BaseOutputConnector {
 
         Map<String, String> customMetadata = new HashMap<>();
         customMetadata.put("mcf_mime_type", document.getMimeType());
-        customMetadata.put("mcf_filename", utfBase64(document.getFileName()));
+        customMetadata.put("filename_b64", utfBase64(document.getFileName()));
         customMetadata.put("file_length", Long.toString(document.getBinaryLength()));
         customMetadata.put("file_key", fileKey);
         customMetadata.put("file_md5hex", fileMd5Hex);

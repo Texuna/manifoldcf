@@ -8,11 +8,15 @@ pipeline {
         stage('Build jars:') {
             steps {
                 sh 'ant build'
+                // Uncomment first time
+                // sh 'ant make-core-deps'
             }
         }
         stage('Store artifacts') {
             steps {
                 archive 'dist/connector-lib/mcf-s3output-connector.jar'
+                // test
+                //step([$class: 'ArtifactArchiver', artifacts: 'dist/connector-lib/mcf-s3output-connector.jar', fingerprint: false])
             }
         }
     }

@@ -171,6 +171,7 @@ public class S3OutputConnector extends BaseOutputConnector {
         metadata.put("mcf_authority_name", authorityNameString);
         metadata.put("mcf_document_uri", documentURI);
 
+        metadata.put("meta_key", metaKey);
         metadata.put("file_name", document.getFileName());
         metadata.put("file_key", fileKey);
         metadata.put("file_md5hex", fileMd5Hex);

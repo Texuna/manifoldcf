@@ -169,9 +169,9 @@ public class S3OutputConnector extends BaseOutputConnector {
         metadata.put("mcf_indexed_date", TimeUtils.toISOformatAtUTC(document.getIndexingDate()));
         metadata.put("mcf_modified_date", TimeUtils.toISOformatAtUTC(document.getModifiedDate()));
         metadata.put("mcf_authority_name", authorityNameString);
-        metadata.put("mcf_document_uri", utfBase64(documentURI));
+        metadata.put("mcf_document_uri", documentURI);
 
-        metadata.put("filename_b64", utfBase64(document.getFileName()));
+        metadata.put("file_name", document.getFileName());
         metadata.put("file_key", fileKey);
         metadata.put("file_md5hex", fileMd5Hex);
         metadata.put("file_ext", FilenameUtils.getExtension(document.getFileName()));
@@ -201,8 +201,7 @@ public class S3OutputConnector extends BaseOutputConnector {
         ObjectMetadata objectMetadata = new ObjectMetadata();
 
         Map<String, String> customMetadata = new HashMap<>();
-        customMetadata.put("mcf_mime_type", document.getMimeType());
-        customMetadata.put("filename_b64", utfBase64(document.getFileName()));
+        customMetadata.put("mime_type", document.getMimeType());
         customMetadata.put("file_length", Long.toString(document.getBinaryLength()));
         customMetadata.put("file_key", fileKey);
         customMetadata.put("file_md5hex", fileMd5Hex);
@@ -212,10 +211,6 @@ public class S3OutputConnector extends BaseOutputConnector {
         final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fileKey, doc.toFile());
         putObjectRequest.setMetadata(objectMetadata);
         s3.putObject(putObjectRequest);
-    }
-
-    private String utfBase64(String str) {
-        return new String(Base64.encodeBase64(str.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
     }
 
     private String genMetaKey(String prefix, String documentURI) {

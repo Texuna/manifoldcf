@@ -1,0 +1,57 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+#if($TABNAME == $ResourceBundle.getString('S3Connector.S3TabName'))
+
+<table class="displaytable">
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.Endpoint'))</nobr></td>
+    <td class="value"><input name="endpoint" type="text" value="$Encoder.attributeEscape($ENDPOINT)" size="32" /></td>
+  </tr>
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.Region'))</nobr></td>
+    <td class="value"><input name="region" type="text" value="$Encoder.attributeEscape($REGION)" size="32" /></td>
+  </tr>
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.Bucket'))</nobr></td>
+    <td class="value"><input name="bucket" type="text" value="$Encoder.attributeEscape($BUCKET)" size="32" /></td>
+  </tr>
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.AccessKey'))</nobr></td>
+    <td class="value"><input name="access_key" type="text" value="$Encoder.attributeEscape($ACCESS_KEY)" size="32" /></td>
+  </tr>
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.SecretKey'))</nobr></td>
+    <td class="value"><input name="secret_key" type="text" value="$Encoder.attributeEscape($SECRET_KEY)" size="32" /></td>
+  </tr>
+  <tr>
+    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('S3Connector.Prefix'))</nobr></td>
+    <td class="value"><input name="prefix" type="text" value="$Encoder.attributeEscape($PREFIX)" size="32" /></td>
+  </tr>
+
+</table>
+
+#else
+
+<input type="hidden" name="endpoint" value="$Encoder.attributeEscape($ENDPOINT)" />
+<input type="hidden" name="region" value="$Encoder.attributeEscape($REGION)" />
+<input type="hidden" name="bucket" value="$Encoder.attributeEscape($BUCKET)" />
+<input type="hidden" name="access_key" value="$Encoder.attributeEscape($ACCESS_KEY)" />
+<input type="hidden" name="secret_key" value="$Encoder.attributeEscape($SECRET_KEY)" />
+<input type="hidden" name="prefix" value="$Encoder.attributeEscape($PREFIX)" />
+
+#end

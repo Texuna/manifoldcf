@@ -8,3 +8,6 @@
 /dist/
 lib-proprietary/*.jar
 site/fonts/
+
+
+install.sh

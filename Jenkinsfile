@@ -15,8 +15,7 @@ pipeline {
         stage('Store artifacts') {
             steps {
                 archive 'dist/connector-lib/mcf-s3output-connector.jar'
-                // test
-                //step([$class: 'ArtifactArchiver', artifacts: 'dist/connector-lib/mcf-s3output-connector.jar', fingerprint: false])
+                step([$class: 'ArtifactArchiver', artifacts: 'dist/connector-lib/mcf-s3output-connector.jar', fingerprint: false])
             }
         }
     }
